@@ -30,28 +30,38 @@ clear
 
 SaveDir ='';
 
-NB_SIMULATIONS = 20; % Number of repeated runs
+NB_SIMULATIONS = 5; % Number of repeated runs
 
 % NB_TIME_STEPS has to be an even number. 
 % Always run the hindcast before future projections (initialisation = winter 2007)
 % Example: 32 (hindcast 2008-2023) + 154 (forecast 2024-2100)
 
 % Historic cyclones and DHW currently available until 2024 (inclusive). 
-NB_TIME_STEPS = 34; % HINDCAST: summer 2008 to winter 2024 (34 steps)
-% NB_TIME_STEPS = 34+152; % HINDCAST+FORECAST summer 2008 - winter 2100
+% NB_TIME_STEPS = 34; % HINDCAST: summer 2008 to winter 2024 (34 steps)
+NB_TIME_STEPS = 34+152; % HINDCAST+FORECAST summer 2008 - winter 2100
+% NB_TIME_STEPS = 34+92; % until 2070
+% NB_TIME_STEPS = 34+32; % TEST
 
 % Set the format for output extraction and saving
 format_extract = 'short' ; % annual outputs (every year)
 % format_extract = 'long' ; % seasonal outputs (every 6 months) (native time resolution)
 
 % Set the name for the output file. Will add suffix 's' for 'short' or 'l' for 'long'
-OutputName = 'R0_GBR.7.3'; options = [1 1 1 1 0 1 0.3 0]; % see list of options below
+% OutputName = 'R0_GBR.7.3'; options = [1 1 1 1 0 1 0.3 0]; % see list of options below
+
+% OutputName = 'R0a_CAIRNS.7.3'; options = [1 1 1 1 1 1 0.3 0]; % with ghost outplanting for site tracking (outplant_density =0)
+% OutputName = 'R1a_CAIRNS.7.3'; options = [1 1 1 1 1 1 0.3 0]; % with outplanting 5 per m2
+% OutputName = 'R2a_CAIRNS.7.3'; options = [1 1 1 1 1 1 0.3 0]; % with outplanting 5 per m2 and enhanced HT
+
+% OutputName = 'R0a_CAIRNS.7.3'; options = [1 1 1 1 1 1 0.3 0]; % with ghost outplanting for site tracking (outplant_density =0)
+% OutputName = 'R1a_CAIRNS.7.3'; options = [1 1 1 1 1 1 0.3 0]; % with outplanting 5 per m2
+OutputName = 'R2a_CAIRNS.7.3'; options = [1 1 1 1 1 1 0.3 0]; % with outplanting 5 per m2 and enhanced HT
 
 %% select the Global Circulation Model for climate change projection (CMIP-6)
 GCM = 1; % 1=CNRM-ESM2-1, 2=EC-Earth3-Veg, 3=IPSL-CM6A-LR, 4=MRI-ESM2-0, 5=UKESM1-0-LL, ...
 % 6=GFDL-ESM4, 7=MIROC-ES2L, 8=MPI-ESM1-2-HR, 9=MIROC6, 10=NorESM2-LM
 
-SSP = 3; % 1=SSP1-1.9, 2=SSP1-2.6, 3=SSP2-4.5, 4=SSP3-7.0, 5=SSP5-8.5
+SSP = 2; % 1=SSP1-1.9, 2=SSP1-2.6, 3=SSP2-4.5, 4=SSP3-7.0, 5=SSP5-8.5
 % Note SSP1-1.9 is not available for GFDL-ESM4, MPI-ESM1-2-HR and NorESM2-LM
 
 %% --------------------------------------------------------------------------------
@@ -90,12 +100,27 @@ OPTIONS.ssc = []; %in mg/L
 % 1) Outplanting %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Timing of outplanting (set to 0 for not doing this intervention)
 RESTORATION.doing_coral_outplanting = uint8(zeros(1,NB_TIME_STEPS)); % if zero, no coral deployment at time step for all reefs
-RESTORATION.doing_coral_outplanting(1,38:2:46) = 1 ; % set to 1 to indicate outplanting: first in summer 2026 and last in summer 2030 (BCA)
+RESTORATION.doing_coral_outplanting(1,37:2:end) = 1 ; % do it any time from summer 2026 till the end if threshold allows for it
+% RESTORATION.doing_coral_outplanting(1,[37:2:43 77:2:83] ) = 1 ; % for consecutive outplanting from summer 2026 (can't do 5 because coral cover above threshold by then)
 % RESTORATION.doing_coral_outplanting(1,[38:2:46 78:2:86 118:2:126 158:2:166] ) = 1 ; % outplanting starts 2026-2030, 2046-2050, 2066-2070, 2086-2090
 
-RESTORATION.total_nb_outplants = 1e6; % Nb of outplants available for the GBR at each deployment (= time step). Set to Inf if density/nb_reefs are the drivers
-RESTORATION.outplanted_density = 6.8;  % only in the case of fixed density of outplants (ignores RESTORATION.total_nb_outplants?)
+RESTORATION.targetReef_ID_coral_outplanting = 744; % new barrens (GBR1): 744, 754, 816
+% RESTORATION.targetReef_ID_coral_outplanting = 816; % new barrens (GBR4): 816, 882, 935
+
+RESTORATION.total_nb_outplants = []; % Nb of outplants available for the GBR at each deployment (= time step). 
+% Set to [] if density/nb_reefs are the drivers
+
+RESTORATION.outplanted_density = 0;  % only in the case of fixed density of outplants (ignores RESTORATION.total_nb_outplants?)
+
 RESTORATION.MEAN_HT_outplants = 0*[1 1 1 1 1 1];% as +°C-week (DHW) compared to the contemporary mean of the group
+
+% Scenarios (a)
+RESTORATION.outplant_species_prop = [0 0 0.7 0 0.3 0]; % taxonomic composition of outplants represented in aquaculture - must sum to 1
+RESTORATION.outplant_species_representation = [0 0 0.3 0 0.1 0]; % contribution of outplants to the abundance of each group in the wild - doesn't need to sum to 1
+
+% Scenarios (b)
+% RESTORATION.outplant_species_prop = [0.05 0.25 0.25 0.15 0.15 0.15]; 
+% RESTORATION.outplant_species_representation = [0 0 1 0 1 0]; 
 
 % 2) Larval enrichment %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Timing of larval enrichment (set to 0 for not doing this intervention)
@@ -103,11 +128,11 @@ RESTORATION.doing_larval_enrichment = uint8(zeros(1,NB_TIME_STEPS));
 % RESTORATION.doing_larval_enrichment(1,38:2:46) = 1 ; % set to 1 to do outplanting
 % RESTORATION.doing_larval_enrichment(1,2:2:30) = 1 ;
 
-RESTORATION.nb_reefs_enriched = 10 ; % max number of reefs where larval enrichment is undertaken at each time step
+RESTORATION.nb_reefs_enriched = 0 ; % max number of reefs where larval enrichment is undertaken at each time step
 % Will be picked from a priority list generated in f_generate_priority_list OR specified in SETTINGS_RESTORATION)
 % If 0, enrichment cannot happen. For the counterfactual, set to Inf with total_nb_larvae = 0 for ghost deployment
 RESTORATION.total_nb_larvae = Inf; % Max number of 'larvae' (ie, 1 yr old corals) available at each time step. Set to Inf if unlimited.
-RESTORATION.MEAN_HT_larvae = 2*[1 1 1 1 1 1];% as +°C-week (DHW) compared to the contemporary mean of the group
+RESTORATION.MEAN_HT_larvae = 0*[1 1 1 1 1 1];% as +°C-week (DHW) compared to the contemporary mean of the group
 
 % 3) Rubble stabilisation %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Set the restoration effort: number of reefs where rubble is stabilised at each time step
@@ -121,7 +146,7 @@ RESTORATION.doing_rubble_stabilisation = uint8(zeros(1,NB_TIME_STEPS));
 RESTORATION.doing_fogging = uint8(zeros(1,NB_TIME_STEPS)); %if zero don't do fogging at time step
 % RESTORATION.doing_fogging(1,32:2:end) = 1 ; % set to 1 to do fogging (only in summer)
 
-RESTORATION.nb_reefs_fogged = []; % number of reefs if random deployment, otherwise =[] but need to listthe  reef IDs
+RESTORATION.nb_reefs_fogged = []; % number of reefs if random deployment, otherwise =[] but need to list the  reef IDs
 RESTORATION.fogged_reef_ID = [695 697 969 970]; % using 5 fogging units (22.5 km2) covering 23 km2 (equivalent 2D reef areas)
 % 695-Moore; 697-Elford; 698-Briggs ; 969-Milln; 970-Thetford
 % Leave empty otherwise []
@@ -149,8 +174,6 @@ TEMP_META = struct('META', []);
 
 % parfor run_id = 1:NB_SIMULATIONS
 for run_id = 1:NB_SIMULATIONS
-
-    run_id
 
     tic
     [meta, REEF, RESULT, RECORD] = f_multiple_reef(OPTIONS, RESTORATION, NB_TIME_STEPS, run_id);
