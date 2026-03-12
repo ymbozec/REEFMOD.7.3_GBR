@@ -7,7 +7,8 @@
 META.COTS_reef_trigger = 0; % whether (1) or not (0) the trigger of control is reef-level CoTS above threshold of 0.22 CoTS per tow
 % If set to 0, the trigger is CoTS density per site, not per reef. The alternative (1) hasn't been tested yet.
 
-META.COTS_control_start = 23; % timestep in 6-month intervals when control should start = 23 (summer 2019)
+% META.COTS_control_start = 23; % timestep in 6-month intervals when control should start = 23 (summer 2019)
+META.COTS_control_start = 37; % Start in 2026, when outplanting begins to keep the seed consistent
 
 %%% CHOOSING REEFS TO CONTROL  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % YM 07/25: now defining the region where CoTS control is deployed (region names to match 'New_regions_TS.mat').

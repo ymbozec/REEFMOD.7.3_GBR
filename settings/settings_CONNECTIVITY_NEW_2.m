@@ -28,7 +28,10 @@
 
 % Before selecting the connectivity model, create the diagonal for larval retention
 self_CORAL = sparse(diag(META.coral_min_selfseed * ones(1,META.nb_reefs)));
-self_COTS = sparse(diag(META.COTS_min_selfseed * ones(1,META.nb_reefs,1)));
+
+if META.doing_COTS == 1
+    self_COTS = sparse(diag(META.COTS_min_selfseed * ones(1,META.nb_reefs,1)));
+end
 
 %% GBR4 - Coral (Acropora) and COTS connectivity (Hock et al. 2017, 2019)
 load('GBR_CONNECT_7years.mat'); % Connectivity matrices for Acropora and CoTS (7 spawning seasons for each)
@@ -73,7 +76,7 @@ id2 = randi(7); % randomly select one of the 7 matrices for 2017-18
 % my_sequence = repelem([2, 3, 4, id1, 5, 6, 7, id2], 2); % will repeat each element to get same value for two consectutive time steps (=1 year)
 % my_sequence_extended = [7, 7, id2, id2, repmat(my_sequence, 1, 20)]; % 2010-11 = 1st year available so cycle back for 2008-09 and 2009-10
 % META.connectivity.CORAL_sequence = [years(my_sequence_extended(1:META.nb_time_steps)); num2cell(my_sequence_extended(1:META.nb_time_steps))];
-% 
+
 % COTS ------------------
 if META.doing_COTS == 1 && META.doing_COTS_connectivity == 1
 

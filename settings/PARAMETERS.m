@@ -15,7 +15,7 @@ META.nb_time_steps = 60 ; % Number of time steps (= 6 mo)
 
 META.nb_simul = 1 ; % Number of simulation runs to repeat
 
-META.max_colonies = 40 ; % Maximum number of colonies of any given species in a cell
+META.max_colonies = 60 ; % Maximum number of colonies of any given species in a cell
 
 META.recruitment_type = 0 ; % set to 0 for fixed, 1 for variable. Refined with actual free space.
 
@@ -162,16 +162,10 @@ CORAL.lobophora_reduce_rate = [ 0.75 ; 0.75 ; 0.75 ; 0.75 ; 0.75 ; 0.75]/7; % Or
 % = 0.25*6 months from Lirman 2001 (ranges from 0.25 cm2 per month to 0.43) (replaces DICT_OVER_SPAWNER?)
 CORAL.dictyota_reduce_rate = [ 1.5 ; 1.5 ; 1.5 ; 0; 1.5 ; 1.5 ]; % for spawners only
 
-
-%%%%% 2) THE FOLLOWING CORAL PARAMETERS ARE NOT SPECIES-SPECIFIC %%%%%%%%
-
-% Percent of colony growth that is actively overgrow other corals
-% set arbitrarily so that up to 20% of the colony's projected growth can overgrow smaller corals
-CORAL.fractional_overgrowth = 0.2 ; 
-
-% Size of full fecundity (OLD Caribbean stuff)
-% threshold size for changing mortality as fecunditiy is a direct function of size)
-% CORAL.adult_size = 110; % Caribbean: 250; % MOOREA: 50 ;
+% Parameter a of the B-H function (same for all reefs), calibrated with LTMP observations of recovering reefs
+CORAL.BH_alpha = 15*CORAL.prop_settlers; % per m2
+% CORAL.BH_beta = 5*1e6*ones(6,1); % for a 400m2 reef
+CORAL.BH_beta = 0.4*5e6*ones(6,1); % 08/2025: for a 400m2 reef, with FS now 0.4 instead of 1
 
 % 2018: Fecundity is now group-specific, with number of eggs predicted by colony size
 CORAL.fecund_min_size = [123; 123 ; 134 ; 31 ; 38 ; 38 ];
@@ -186,6 +180,15 @@ CORAL.fecund_min_size = [123; 123 ; 134 ; 31 ; 38 ; 38 ];
 CORAL.fecund_a = [1.03 ; 1.03 ; 1.69 ; -1.20 ; 0.86 ; 0.86 ];
 CORAL.fecund_b = [1.28 ; 1.28 ; 1.05 ; 2.27 ; 1.21 ; 1.21 ];
 
+%%%%% 2) THE FOLLOWING CORAL PARAMETERS ARE NOT SPECIES-SPECIFIC %%%%%%%%
+
+% Percent of colony growth that is actively overgrow other corals
+% set arbitrarily so that up to 20% of the colony's projected growth can overgrow smaller corals
+CORAL.fractional_overgrowth = 0.2 ; 
+
+% Size of full fecundity (OLD Caribbean stuff)
+% threshold size for changing mortality as fecunditiy is a direct function of size)
+% CORAL.adult_size = 110; % Caribbean: 250; % MOOREA: 50 ;
 % Intercept for incidence relationship from Meesters
 CORAL.partial_mortality_inci_int = 88.9;% Meesters et al. 1997 (see Mumby et al. 2013)
 

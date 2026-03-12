@@ -179,7 +179,7 @@ CHECK = sum(init_coral_cover,2) + init_sand_cover;
 init_sand_cover(CHECK>0.95) = 0.95 - sum(init_coral_cover(CHECK>0.95,:),2);
 
 %% Populate initial algal cover
-init_algal_cover = 0.001*ones(META.nb_reefs,META.nb_coral_types);
+init_algal_cover = 0.001*ones(META.nb_reefs,META.nb_algal_types);
 
 clear init_coral init_sand init_rubble relative_cover X Y varSD adjust_TCmax select_TCmax TCmax varSDother CHECK
 
@@ -204,7 +204,6 @@ REEF_COTS.densities_SD(:,1) = PAST_COTS_SD_COCONET(META.reef_ID,start_year); % d
 % Mean coTS per tow from AIMS LTMP (ID=1), FMP (ID=2) and Control Program (ID=3). Missing values identified as NaN.
 load('GBR_PAST_COTS_1992_2025.mat') % 67 columns from 1992 to 2022.5 inclusive
 % 2025, 2024.5, 2024, 2023.5: only CP ; 2023: CP+FMP ; 2022.5: CP+FMP+LTMP
-
 GBR_PAST_COTS_PER_GRID = (GBR_PAST_COTS_NEW(META.reef_ID,:)/0.22)*(1500/2500); % Conversion: 1500 COTS per km2 ~0.22 per manta tow (Moran and De'ath 1986)
 % which is further divided by 2500 to get number of COTS per 400m2 (reef grid size)
 
@@ -263,19 +262,20 @@ if META.doing_genetics == 0 % NO GENETIC ADAPTATION (WITH THERMAL OPTIMUM)
             
             % Select the specified timeframe in the available forecast
             DHW_FORECAST = max_annual_DHW(META.reef_ID,31:(31+(META.nb_time_steps-start_future-1)/2));
+            % DHW_FORECAST_shuffled = DHW_FORECAST; % deactivate the shuffling
             % Let's shuffle available years within each decade
             DHW_FORECAST_shuffled = nan(size(DHW_FORECAST));
             start = 1; % first year of the selected forecast
             remain = size(DHW_FORECAST,2); % number of years still available
-            
+
             while remain > 10
-                
+
                 sample = randperm(10); % sample at random within the decade
                 DHW_FORECAST_shuffled(:,start:(start-1+length(sample)))= DHW_FORECAST(:,start-1+sample); % assign the shuffled years
                 start = start + length(sample);
                 remain = remain - length(sample);
             end
-            
+
             % Last years available to be shuffled as well (Less than a decade s available)
             sample = randperm(remain);
             DHW_FORECAST_shuffled(:,start:(start-1+length(sample)))= DHW_FORECAST(:,start-1+sample);

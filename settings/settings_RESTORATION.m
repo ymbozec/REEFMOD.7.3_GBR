@@ -14,32 +14,111 @@ META.doing_coral_outplanting = RESTORATION.doing_coral_outplanting ; % timing of
 
 % Restoration effort in terms of total number of outplants available at each time step
 META.total_nb_outplants = RESTORATION.total_nb_outplants;
+
 % Restoration effort in terms of number of reefs where coral outplanting is undertaken at each time step
-META.nb_reefs_outplanted = RESTORATION.total_nb_outplants ; % ? Set to Inf if unlimited OR if specific reefs are restored (listed in SETTINGS_RESTORATION
+% META.nb_reefs_outplanted = 1 ; % ? Set to Inf if unlimited OR if specific reefs are restored (listed in SETTINGS_RESTORATION
 % If 0, outplanting cannot happen. For the counterfactual, set to Inf with outplanted_density = 0 for ghost deployment
+
 META.outplant_density_variable = 1; % 1: deployed density on a reef is variable and deployment area (as a proportion of reef area) is fixed;
 % 0: density is fixed (META.outplanted_density), and deployment area is variable (NOT IMPLEMENTED YET)
 
 % Set the proportion of the different coral types to be outplanted
-META.outplant_species_prop = [0.02 0.14 0.14 0 0.7 0]; % must sum to 1
-META.outplanted_density = 6.8; % Density (m-2) of deployed outplants on a reef (6.8 corals per m-2 corresponds to the density of 1-yr old corals
+META.outplant_species_prop = RESTORATION.outplant_species_prop;
+% META.outplant_species_prop = [0.02 0.14 0.14 0 0.7 0]; % must sum to 1
+% META.outplant_species_prop = [0 0.15 0.5 0 0.35 0]; % must sum to 1
+% META.outplant_species_prop = [0 0 0.7 0 0.3 0]; % proportion of groups represented in aquaculture - must sum to 1
+
+% Set the contribution of outplants to the abundance of each group in the wild - doesn't need to sum to 1
+META.outplant_species_representation = RESTORATION.outplant_species_representation;
+% META.outplant_species_representation = [0 0 0.4 0 0.2 0];
+% META.outplant_species_representation = [0 0 1 0 1 0]; % the reared groups = native groups (then initial coral cover for native will be 0)
+
+META.outplant_breeding_time = 10; % even number of 6 mo steps coral have been bred in captivity before deployment, to get the baseline of mean HT
+
+META.outplanted_density = RESTORATION.outplanted_density; % Density (m-2) of deployed outplants on a reef (6.8 corals per m-2 corresponds to the density of 1-yr old corals
 % observed in the Philippines after experimenting larval re-seeding). RRAP 2022 intervention study was assuming density for outplants = density after
 % larval re-seeding for comparing the efficiency of the two techniques (focusing on other parameters)
 
 % META.outplant_density_aquaculture.slope = -0.72 ; % function to adjust outplant density (NOT IMPLEMENTED YET)
 % META.outplant_density_aquaculture.intercept = 11.8 ; % function to adjust outplant density (NOT IMPLEMENTED YET)
 
-% size of coral outplant (as 1yr old corals)
+%% size of coral outplant (as 1yr old corals)
 META.outplant_coral_diameter_mean = [2.56 2.56 2.56 1.41 1.41 1.41] ; % mean diameter (in cm) of outplants for each deployed group
 META.outplant_coral_diameter_sd = [0.26 0.26 0.26 0.14 0.14 0.14] ; % sd diameter (in cm) of outplants for each deployed group
+
+% March 2026: assume same size of natural corals of the same age (1 yr old) -> 3 cm2 area.
+% Note any diameter between 1.6 cm and 1.9 cm will give 3 cm2, because outplant area is rounded up to the next integer
+% (all coral areas are tracked as integer values)
+META.outplant_coral_diameter_mean = 1.9*[1 1 1 1 1 1] ; % mean diameter (in cm) of outplants for each deployed group
+META.outplant_coral_diameter_sd = 0*[1 1 1 1 1 1] ; % sd diameter (in cm) of outplants for each deployed group
 
 % Mean heat tolerance of outplants relative to the contemporary mean of the group
 META.MEAN_HT_outplants = RESTORATION.MEAN_HT_outplants;  % as +°C-week (DHW)
 % Variance of heat tolerance of outplants
-META.VAR_HT_outplants = CORAL.VAR_HT;  % as +°C-week (DHW) - same as native corals?
+META.VAR_HT_outplants = CORAL.VAR_HT';  % as +°C-week (DHW) - same as native corals?
 % Maximum heat tolerance of outplants
-META.MAX_HT_outplants = CORAL.MAX_HT;  % as +°C-week (DHW) - same as native corals?
+META.MAX_HT_outplants = CORAL.MAX_HT';  % as +°C-week (DHW) - same as native corals?
 
+%% ADDING GROUPS IN PRODUCTION
+META.id_outplanted_groups = find(META.outplant_species_prop > 0) ; % defined by the vector of species composition
+
+lengths = structfun(@(x) size(x,1), CORAL);
+I=find(lengths==META.nb_coral_types);
+fields = fieldnames(CORAL);
+select_fields = fields(I);
+
+for s = META.id_outplanted_groups
+
+    for f=1:length(select_fields)
+
+        V = extractfield(CORAL,cell2mat(select_fields(f))) ;
+        newV = [V  V(s)];
+        CORAL = setfield(CORAL,cell2mat(select_fields(f)),newV') ;
+        % Note that prop_settlers (proportion of each coral type in maximum settlement) summed to 1 initially
+        % Now above 1 but probably not a big deal as an addition of a new population?
+    end
+end
+
+% Adjust parameter vectors according to changing number of groups
+update_outplants = @(X,id_outplant_groups) [0.*X X(id_outplant_groups)];
+META.nb_coral_types = META.nb_coral_types + length(META.id_outplanted_groups); % duplicate all coral types
+
+META.outplant_species_prop = update_outplants(META.outplant_species_prop,META.id_outplanted_groups );
+META.outplant_coral_diameter_mean = update_outplants(META.outplant_coral_diameter_mean,META.id_outplanted_groups );
+META.outplant_coral_diameter_sd = update_outplants(META.outplant_coral_diameter_sd,META.id_outplanted_groups );
+META.MEAN_HT_outplants = update_outplants(META.MEAN_HT_outplants,META.id_outplanted_groups );
+META.VAR_HT_outplants = update_outplants(META.VAR_HT_outplants,META.id_outplanted_groups );
+META.MAX_HT_outplants = update_outplants(META.MAX_HT_outplants,META.id_outplanted_groups );
+
+% Split initial coral cover among the newly created group
+% For example, group 3 needs to be split between species not available vs species available for production (now in group 7)
+Y = init_coral_cover; % initial cover for every Reef_ID
+Q1 = 1-META.outplant_species_representation(META.id_outplanted_groups); % contribution of species not available for production
+% reduce initial cover for those groups according to the contrib of species not in production
+Y(:,META.id_outplanted_groups) = init_coral_cover(:,META.id_outplanted_groups).*Q1(ones(1,META.nb_reefs),:); 
+% the difference is now assigned to the species in production for the added groups 
+Y = [ Y init_coral_cover(:,META.id_outplanted_groups).*(1-Q1(ones(1,META.nb_reefs),:))]; % which has now as many added columns than groups in production
+% Total intial cover should be conserved, ie sum(Y,2) shoudl be = to sum(init_coral_cover,2).
+% Then update init_coral_cover with the new matrix with the added groups
+init_coral_cover = Y;
+
+% We need to do the same for the proportion of settlers - 
+% NO: DO IT DIRECTLY TO CORAL.BH_alpha BECAUSE INTEGRATES CORAL.prop_settlers already 
+Z = CORAL.BH_alpha(1:6); % The first 6 values sum to maximum number of recruits per m2
+Z(META.id_outplanted_groups) = Z(META.id_outplanted_groups).*Q1';
+Z = [Z ; CORAL.BH_alpha(META.id_outplanted_groups).*(1-Q1')];
+CORAL.BH_alpha = Z; % Then update the adjusted values
+
+% Split CoTS feeding preferences
+if META.doing_COTS == 1
+    X = [META.COTS_feeding_prefs ; META.COTS_feeding_prefs(META.id_outplanted_groups)];
+    META.COTS_feeding_prefs = X/sum(X); % feeding prefs sum to 1
+end
+
+% Adjust META.coral_immigration with the new groups (even if all assumed 0)
+META.coral_immigration = [META.coral_immigration zeros(size(META.coral_immigration,1),length(META.id_outplanted_groups))];
+
+CORAL.min_fertilization_success = [CORAL.min_fertilization_success CORAL.min_fertilization_success(META.id_outplanted_groups)];
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% 2) Options for moving corals (larval enrichment)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -75,10 +154,10 @@ META.MAX_HT_larvae = CORAL.MAX_HT;  % as +°C-week (DHW) - same as native corals
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% 3) CORAL DEPLOYMENT OPTIONS (works both for coral outplanting and larval enrichment)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-META.deploy_random_density = 1 ; % if 1, nb of outplants in a cell determined by Poisson distribution; if 0, nb=ceil(density)
+META.deploy_random_density = 1 ; % if 1, nb of outplants in a cell is determined by Poisson distribution; if 0, nb=ceil(density)
 META.threshold_for_deploying.min_cover = 0 ; % Minimum percent coral cover (all corals) for deploying on a reef
-META.threshold_for_deploying.max_cover = 100 ; % Maximum percent coral cover (all corals) for deploying on a reef
-META.deployment_area_prop = 0.1 ; % Maximum proportion of reef area under coral deployment 
+META.threshold_for_deploying.max_cover = 10 ; % Maximum percent coral cover (all corals) for deploying on a reef
+META.deployment_area_prop = 0.5 ; % Maximum proportion of reef area under coral deployment 
 
 MinDeploymentArea_km2 = 0.01; % Logistically, it's not worth deploying on a reef less than 0.01 km2 in size
 % Setting deployment area to a minimum 0.01 km2 would only exclude 25 reefs in the Cairns region and 183 GBR-wide.
@@ -101,24 +180,6 @@ TMP = table(Reef_ID, Reef_name, Reef_area_km2, DeploymentArea_km2, NumberCellsTr
 I = find(TMP.Reef_area_km2 < MinDeploymentArea_km2); % find reefs than are smaller than the min deployment area -> will be excluded
 TMP.DeploymentArea_km2(I) = 0;
 TMP.NumberCellsTreated(I) = 0;
-
-% %%%% From version 6.8
-% GridSize = META.grid_x_count*META.grid_y_count;
-% NumberCellsTreated = uint16(GridSize*MinDeploymentArea_km2./META.area_habitat);
-% DeploymentArea_km2 = MinDeploymentArea_km2*ones(size(NumberCellsTreated));
-% Reef_ID = META.reef_ID;
-% Reef_area_km2 = META.area_habitat;
-% Reef_name = GBR_REEFS.GBR_NAME(META.reef_ID);
-% 
-% % Create table for deployment characteristics
-% TMP = table(Reef_ID, Reef_name, Reef_area_km2, DeploymentArea_km2, NumberCellsTreated);
-% I = find(TMP.Reef_area_km2 < MinDeploymentArea_km2); % find reefs than are smaller than the min deployment area -> will be excluded
-% J = find(TMP.NumberCellsTreated < MinDeploymentCells); % find reefs than are too big so that nb of deployed cells is too small
-% TMP.NumberCellsTreated(J) = MinDeploymentCells;
-% TMP.DeploymentArea_km2(J) = (MinDeploymentCells/GridSize)*TMP.Reef_area_km2(J);
-% TMP.DeploymentArea_km2(I) = 0;
-% TMP.NumberCellsTreated(I) = 0;
-
 
 % %%%%% Intervention study 2022: PORTFOLIO Moore cluster (3D deployment areas for 1M corals at 6.8 corals per m2):
 % select_ID = [9 11 12 177 178]; % ONLY WORKS WITH META.reef_ID defined for the 190 reefs around CAIRNS
