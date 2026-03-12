@@ -16,9 +16,19 @@ load('GBR_REEF_POLYGONS_2024.mat') % with updated estimates of ungrazable substr
 % and corrected assignment of shelf position (Caro) and zoning status (Tina).
 
 %% Reef selection
-META.reef_ID = [1:3806]'; % Entire GBR
+% META.reef_ID = [1:3806]'; % Entire GBR
 % META.reef_ID = GBR_REEFS.Reef_ID(GBR_REEFS.LAT<-16.78 & GBR_REEFS.LAT >-17.12 & GBR_REEFS.LON >146.05); % Region around Moore Reef (24 reefs)
 % META.reef_ID = GBR_REEFS.Reef_ID(GBR_REEFS.LAT<-15.76 & GBR_REEFS.LAT >-17.34); % Cairns region reduced (190 reefs) for restoration
+META.reef_ID = GBR_REEFS.Reef_ID(GBR_REEFS.LAT<-14.52 & GBR_REEFS.LAT >-18.15 & GBR_REEFS.LON < 146.92); % Greater Cairns region (262 offshore reefs)
+% META.reef_ID = GBR_REEFS.Reef_ID(GBR_REEFS.LAT<-17 & GBR_REEFS.LAT >-18.15 & GBR_REEFS.LON < 146.92); % TEMP FOR DEBUGGING 69 offshore reefs (MSEL talk)
+% META.reef_ID = GBR_REEFS.Reef_ID(GBR_REEFS.LAT<-17.98 & GBR_REEFS.LAT >-18.22 & GBR_REEFS.LON < 147); % TEMP FOR DEBUGGING 21 offshore reefs
+
+% Exclude inshore reefs
+MY_REEFS = GBR_REEFS(META.reef_ID,:);
+inshore_reefs = find(MY_REEFS.Shelf_position==1); % 80 inshore reefs out of 190, 102 out of 260
+I = 1:size(MY_REEFS,1); 
+I = setdiff(I,inshore_reefs);
+META.reef_ID = META.reef_ID(I);
 
 META.nb_reefs = length(META.reef_ID);
 META.reef_lat = GBR_REEFS.LAT(META.reef_ID); % required for CoTS control
@@ -62,7 +72,7 @@ CORAL.int_se=0.08878;
 CORAL.coef_est=0.1426;
 CORAL.coef_se=0.0006058;
 % Adjust FS to other species relative to that of plating acroporids using multipliers. Species 2 is always 1 (the reference).
-CORAL.relative_allee_effect_per_species = [1 1 1 1 1 1]; % to be revisited later
+CORAL.relative_allee_effect_per_species = [1 1 1 1 1 1]'; % to be revisited later
 
 %% Set up cyclones
 META.doing_hurricanes = OPTIONS.doing_cyclones ;
@@ -77,7 +87,8 @@ META.doing_COTS = OPTIONS.doing_COTS ;
 if META.doing_COTS == 1
     settings_COTS
 else
-    REEF_COTS =[];
+    REEF_COTS = [];
+    CONNECT_COTS = [];
 end
 
 %% Set up CoTS control
@@ -99,11 +110,6 @@ META.doing_size_frequency = OPTIONS.doing_size_frequency; % Track coral colonies
 META.doing_coral_connectivity = 1 ;
 
 META.recruitment_type = 1; % turn into 0 for fixed recruitment (but then connect and genetics won't work)
-
-% Parameter a of the B-H function (same for all reefs), calibrated with
-CORAL.BH_alpha = 15*CORAL.prop_settlers; % per m2
-% CORAL.BH_beta = 5*1e6*ones(6,1); % for a 400m2 reef
-CORAL.BH_beta = 0.4*5e6*ones(6,1); % 08/2025: for a 400m2 reef, with FS now 0.4 instead of 1
 
 % Force self-seeding of coral larvae
 META.coral_min_selfseed = 0.28 ; % relative proportion of produced larvae that stay on the reef (Bozec et al. 2022)
@@ -156,42 +162,35 @@ if META.doing_restoration == 1
 
     settings_RESTORATION;
 
-    % Then generate priority lists for each technique = list of reef ID sorted from highest to lowest priority
+    if isempty(RESTORATION.targetReef_ID_coral_outplanting) == 0
+
+        selectReefIndex = ismember(META.reef_ID, RESTORATION.targetReef_ID_coral_outplanting);
+        META.priority_list_Outplant = find(selectReefIndex==1); % must be the index of the selected list of Reef_ID, not Reef_ID
+        DHW(META.priority_list_Outplant,35) = 40; % Force the restored reef to be smashed by severe bleaching the year before
+
+    else
+    % Then generate prioriMETAty lists for each technique = list of reef ID sorted from highest to lowest priority
     % Note the list is set only once and remains the same throughout the simulation
-    MY_REEFS = GBR_REEFS(META.reef_ID,:);
-    %     META.priority_list_Outplant = f_generate_priority_list_NEW(META.priority_option_Outplant, MY_REEFS, CONNECT);
-    %     META.priority_list_RubbleStab = f_generate_priority_list_NEW(META.priority_option_RubbleStab, META.reef_ID, MY_REEFS, CONNECT);
-    %     META.priority_list_LarvalEnrich  = f_generate_priority_list_NEW(META.priority_option_LarvalEnrich, MY_REEFS, CONNECT);
-    %     META.priority_list_Fogging = f_generate_priority_list_NEW(META.priority_option_Fogging, MY_REEFS, CONNECT);
+    % META.priority_list_Outplant = f_generate_priority_list_NEW(META.priority_option_Outplant, MY_REEFS, CONNECT_CORAL);
+    %     META.priority_list_RubbleStab = f_generate_priority_list_NEW(META.priority_option_RubbleStab, META.reef_ID, MY_REEFS, CONNECT_CORAL);
+    %     META.priority_list_LarvalEnrich  = f_generate_priority_list_NEW(META.priority_option_LarvalEnrich, MY_REEFS, CONNECT_CORAL);
+    %     META.priority_list_Fogging = f_generate_priority_list_NEW(META.priority_option_Fogging, MY_REEFS, CONNECT_CORAL);
 
     % ONLY FOR THE BCA: focus on the two reef clusters and deploy fixed density of outplants
     % Deployment areas are set in settings_RESTORATION
-    META.priority_list_Outplant = find(META.coral_deployment.DeploymentArea_km2>0);
-    META.priority_list_LarvalEnrich = find(META.coral_deployment.DeploymentArea_km2>0);
-    META.priority_list_RubbleStab = 1:length(META.reef_ID); % do it everywhere for the moment
+    % META.priority_list_Outplant = find(META.coral_deployment.DeploymentArea_km2>0);
+    % META.priority_list_LarvalEnrich = find(META.coral_deployment.DeploymentArea_km2>0);
+    % META.priority_list_RubbleStab = 1:length(META.reef_ID); % do it everywhere for the moment
 
-    reef_fogging_list = ismember(META.coral_deployment.Reef_ID,META.fogged_reef_ID);
-    META.priority_list_Fogging = find(reef_fogging_list == 1);
+    % reef_fogging_list = ismember(META.coral_deployment.Reef_ID,META.fogged_reef_ID);
+    % META.priority_list_Fogging = find(reef_fogging_list == 1);
+    end
 
 else % This is needed in MULTIPLE_REEF_SETUP
     META.doing_cooling=0;
     META.cooling_factor = 0;
 end
 
-% Adjustments in case of coral outplanting
-if META.nb_coral_types > 6
-
-    % Add initial cover for outplants (0%)
-    init_coral_cover = [init_coral_cover zeros(META.nb_reefs, META.nb_coral_types-6)];
-
-    if META.doing_COTS == 1
-        % Extend the vector of CoTS preferences
-        X = META.COTS_feeding_prefs;
-        X = [X ; X];
-        META.COTS_feeding_prefs = X/sum(X); % feeding prefs sum to 1
-        %         META.COTS_pref_corals = [META.COTS_pref_corals META.COTS_pref_corals(META.outplanted_species)+5]; % don't need to change this
-    end
-end
 
 %% REFINE IF SPECIFIC FORCING CONDITIONS (eg, for building look-up table for the ReefMod Engine)
 % (only works with single reef simulations)
