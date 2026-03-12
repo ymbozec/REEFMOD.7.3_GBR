@@ -1011,9 +1011,7 @@ t
                     living_planar_coral_cover_cm2 = full(sum(metapop(n).coral(s).cover_cm2(REEF(n).restored_cells,:),2)) ;
                     RESULT.coral_pct2D_restored_sites(n,t+1,s) = 100*sum(living_planar_coral_cover_cm2)./sum(REEF(n).substrate_SA_cm2(REEF(n).restored_cells))  ;
                 end
-                if  sum(RESULT.coral_pct2D_restored_sites(n,t+1,:),3)>100
-                    living_planar_coral_cover_cm2
-                end
+
             end
         end
 
