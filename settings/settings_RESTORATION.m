@@ -43,8 +43,8 @@ META.outplanted_density = RESTORATION.outplanted_density; % Density (m-2) of dep
 % META.outplant_density_aquaculture.intercept = 11.8 ; % function to adjust outplant density (NOT IMPLEMENTED YET)
 
 %% size of coral outplant (as 1yr old corals)
-META.outplant_coral_diameter_mean = [2.56 2.56 2.56 1.41 1.41 1.41] ; % mean diameter (in cm) of outplants for each deployed group
-META.outplant_coral_diameter_sd = [0.26 0.26 0.26 0.14 0.14 0.14] ; % sd diameter (in cm) of outplants for each deployed group
+% META.outplant_coral_diameter_mean = [2.56 2.56 2.56 1.41 1.41 1.41] ; % mean diameter (in cm) of outplants for each deployed group
+% META.outplant_coral_diameter_sd = [0.26 0.26 0.26 0.14 0.14 0.14] ; % sd diameter (in cm) of outplants for each deployed group
 
 % March 2026: assume same size of natural corals of the same age (1 yr old) -> 3 cm2 area.
 % Note any diameter between 1.6 cm and 1.9 cm will give 3 cm2, because outplant area is rounded up to the next integer
@@ -58,6 +58,7 @@ META.MEAN_HT_outplants = RESTORATION.MEAN_HT_outplants;  % as +°C-week (DHW)
 META.VAR_HT_outplants = CORAL.VAR_HT';  % as +°C-week (DHW) - same as native corals?
 % Maximum heat tolerance of outplants
 META.MAX_HT_outplants = CORAL.MAX_HT';  % as +°C-week (DHW) - same as native corals?
+META.MIN_HT_outplants = CORAL.MIN_HT';  % as +°C-week (DHW) - same as native corals?
 
 %% ADDING GROUPS IN PRODUCTION
 META.id_outplanted_groups = find(META.outplant_species_prop > 0) ; % defined by the vector of species composition
@@ -89,6 +90,7 @@ META.outplant_coral_diameter_sd = update_outplants(META.outplant_coral_diameter_
 META.MEAN_HT_outplants = update_outplants(META.MEAN_HT_outplants,META.id_outplanted_groups );
 META.VAR_HT_outplants = update_outplants(META.VAR_HT_outplants,META.id_outplanted_groups );
 META.MAX_HT_outplants = update_outplants(META.MAX_HT_outplants,META.id_outplanted_groups );
+META.MIN_HT_outplants = update_outplants(META.MIN_HT_outplants,META.id_outplanted_groups );
 
 % Split initial coral cover among the newly created group
 % For example, group 3 needs to be split between species not available vs species available for production (now in group 7)
@@ -150,6 +152,7 @@ META.MEAN_HT_larvae = RESTORATION.MEAN_HT_larvae;  % as +°C-week (DHW)
 META.VAR_HT_larvae = CORAL.VAR_HT;  % as +°C-week (DHW) - same as native corals?
 % Maximum heat tolerance of larvae
 META.MAX_HT_larvae = CORAL.MAX_HT;  % as +°C-week (DHW) - same as native corals?
+META.MIN_HT_larvae = CORAL.MIN_HT;  % as +°C-week (DHW) - same as native corals?
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% 3) CORAL DEPLOYMENT OPTIONS (works both for coral outplanting and larval enrichment)
@@ -207,7 +210,7 @@ META.proportion_rubble_stabilised = 1 ; % proportion of rubble that will be stab
 META.threshold_for_stabilisation = 0 ; % Minimum percent rubble cover above which reef is selected for rubble stabilisation
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% 4) Options for Solar Radiation Management (fogging & cooling)
+%% 5) Options for Solar Radiation Management (fogging & cooling)
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Fogging
 META.doing_fogging = RESTORATION.doing_fogging; % timing of fogging (no fogging if sum(META.doing_fogging)=0)
@@ -224,8 +227,37 @@ META.priority_option_Fogging.link_number = 0 ; %1 (increasing, min external supp
 META.priority_option_Fogging.reef_area = 0 ;
 META.priority_option_Fogging.focal_reef = []; % 695-Moore; 697-Elford; 698-Briggs ; 969-Milln; 970-Thetford
 
-% Cooling (not impleented yet)
+% Cooling (new implementation 06/2026)
 META.doing_cooling = RESTORATION.doing_cooling ; % timing of cooling (no cooling if sum(META.doing_cooling)=0)
+META.cooled_reef_ID = RESTORATION.cooled_reef_ID;
+
+if sum(META.doing_cooling) >0 % if doing MCB anywhere on the GBR
+
+    K = ismember(META.reef_ID, META.cooled_reef_ID); % flag the reefs under MCB
+
+    % Load the models corresponding to the targeted SSP
+    HURDLE_MODEL_MCB(1).model = load(['params_hurdle_SHELF1_alb02_ssp' char(OPTIONS.SSP) '_DHW_MAX_100.mat']);
+    HURDLE_MODEL_MCB(2).model = load(['params_hurdle_SHELF2_alb02_ssp' char(OPTIONS.SSP) '_DHW_MAX_100.mat']);
+    HURDLE_MODEL_MCB(3).model = load(['params_hurdle_SHELF3_alb02_ssp' char(OPTIONS.SSP) '_DHW_MAX_100.mat']);
+
+    MCB_steps = find(META.doing_cooling==1)-1; % need to extract 1 to get into summer
+    DHW_CF = DHW(:,MCB_steps); % extract yearly, making sure summer steps are taken
+    DHW_MCB = zeros(size(DHW_CF)); % DHW under MCB to populate based on predictions from hurdle models
+
+    for shelf = 1:3
+
+        I = find(MY_REEFS.Shelf_position==shelf & K==1);
+
+        for yr = 1:size(DHW_MCB, 2)
+            OUT = f_predict_hurdle_MCB(DHW_CF(I, yr), yr, MY_REEFS.LAT(I), HURDLE_MODEL_MCB(shelf).model);
+            DHW_MCB(I, yr) = OUT.DHW_INT;
+        end
+    end
+
+    DHW(K==1,MCB_steps) = DHW_MCB(K==1,:);% place the cooled DHW in the DHW matrix
+end
+
+% Old way of simulating cooling - just keep it null (otherwise will add extra cooling as DHW-META.cooling_factor*12
 META.cooling_factor = 0; % Set 0 if no cooling, otherwise consider the different levels (Bozec & Mumby 2019) [-0.3 ; -0.7 ; -1.3];
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

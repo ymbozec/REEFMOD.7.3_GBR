@@ -341,8 +341,9 @@ CORAL.sensitivity_bleaching = [1.5 ; 1.6 ; 1.4 ; 1.7 ; 0.25 ; 0.25]; % GBR after
 % Inter-individual variability of heat tolerance (Oct 2023)
 % 1) variance of HT values in each group, based on the SD of heat tolerance distribution in Palau's experiment (Humanes et al. 2022)
 CORAL.VAR_HT = (2.49^2) * [1 ; 1 ; 1 ; 1 ; 1 ; 1 ]; % set to 0 to simulate no variability of heat tolerance (ie as in all simulations before 06/2023)
-% 2) evolutionary limit to HT values (+/- MAX_HT)
+% 2) evolutionary limits to HT values
 CORAL.MAX_HT = 8 * [1 ; 1 ; 1 ; 1 ; 1 ; 1 ];
+CORAL.MIN_HT = -8 * [1 ; 1 ; 1 ; 1 ; 1 ; 1 ]; % June 2026: now defining min values as well
 
 % for the processing of heritability of HT traits
 META.HT_pop_size = 1000 ; % number of representative HT phenotypes in the reproductive output before dispersal (same principle as QTL pool in genetic model)
