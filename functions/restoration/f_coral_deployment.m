@@ -7,7 +7,7 @@
 
 function   [coral, algal, genes, ID_colony_tracking, total_deployed] = ...
     f_coral_deployment(coral, algal, genes, REEF, ID_colony_tracking, META, Density_to_deploy, coral_diameter_mean, coral_diameter_sd, restored_cells,...
-    MEAN_HT_outplants,VAR_HT_outplants,MAX_HT_outplants)
+    MEAN_HT_outplants, VAR_HT_outplants, MIN_HT_outplants, MAX_HT_outplants)
 
 % Feb 11 2022: we now have pre-determined cells for deployment (varies for each run)
 % Tried to minimise code changes to keep track of previous version
@@ -98,7 +98,8 @@ for s = select_species
     % Set heat tolerance of outplants
     HT_outplants = transplant_layer_cm2;
     HT_outplants(transplant_layer_cm2>0) = normrnd(MEAN_HT_outplants(s),sqrt(VAR_HT_outplants(s)), 1,total_deployed(1,s));
-    HT_outplants(abs(HT_outplants)>=MAX_HT_outplants(s))= MEAN_HT_outplants(s)+0.0001 ; % replace extreme values (unlikely) by the mean + 0.0001
+    HT_outplants(HT_outplants > MAX_HT_outplants(s))= MEAN_HT_outplants(s)+0.0001 ; % replace extreme values (unlikely) by the mean + 0.0001
+    HT_outplants(HT_outplants < MIN_HT_outplants(s))= MEAN_HT_outplants(s)+0.0001 ; % replace extreme values (unlikely) by the mean + 0.0001
     
     % Merge with existing corals
     coral(s).cover_cm2 = [coral(s).cover_cm2 transplant_layer_cm2];
