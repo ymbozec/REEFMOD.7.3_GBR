@@ -56,7 +56,8 @@ if sum([REEFn.initial_coral_cover])~=0
             
             % ASSIGN heat tolerance at random within specified range
             colony_HT = normrnd(0,sqrt(CORAL.VAR_HT(s)), 1, length(colony_type));
-            colony_HT(abs(colony_HT)>=CORAL.MAX_HT(s))=0 ; % replace extreme values (unlikely) by the mean
+            colony_HT(colony_HT > CORAL.MAX_HT(s))=0 ; % replace extreme values (unlikely) by the mean
+            colony_HT(colony_HT < CORAL.MIN_HT(s))=0 ; % replace extreme values (unlikely) by the mean
 
             % CONCATENATE
             all_colony_sizes = [all_colony_sizes colony_size]; % list of sizes of all colonies, all species combined

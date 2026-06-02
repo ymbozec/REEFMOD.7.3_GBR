@@ -409,7 +409,7 @@ for n = 1:META.nb_reefs % This must be done for every reef before time simulatio
 
             % Control and correct for HT value beyond the limits
             HT_offspring(HT_offspring > CORAL.MAX_HT(s)) = CORAL.MAX_HT(s); % cap with maximum HT value
-            HT_offspring(HT_offspring < -CORAL.MAX_HT(s)) = -CORAL.MAX_HT(s); % cap with maximum HT value
+            HT_offspring(HT_offspring < CORAL.MIN_HT(s)) = CORAL.MIN_HT(s); % cap with minimum HT value
 
             REEF(n).HT_pool_OUT_TMP(:,s) = HT_offspring; % store the checked HT in the pool of ougoing larvae
 
@@ -604,7 +604,8 @@ t
                         else % would arise when simulating a subset of reefs (ie, a region) and all larvae come from outside the region
                             % In that case just create new HT based on the historical (contemporary) population
                             colony_HT = normrnd(0,sqrt(CORAL.VAR_HT(s)), 1, META.HT_pop_size);
-                            colony_HT(abs(colony_HT)>=CORAL.MAX_HT(s))=0 ; % replace extreme values by the mean
+                            colony_HT(colony_HT > CORAL.MAX_HT(s))=0 ; % replace extreme values by the mean
+                            colony_HT(colony_HT < CORAL.MIN_HT(s))=0 ; % replace extreme values by the mean
                             REEF(n).HT_pool_IN(:,s) = colony_HT';
                         end
 
@@ -882,7 +883,7 @@ t
             % [metapop(n).coral, metapop(n).genes, total_settled, ID_colony_tracking(n,:), metapop(n).algal] = f_apply_recruitment(metapop(n).coral, metapop(n).algal,...
             %     metapop(n).genes, META, REEF(n), max_density_settlers, CORAL.clade_prop, ID_colony_tracking(n,:), CORAL.DeltaDHW, CORAL.sensitivity_bleaching);
             [metapop(n).coral, metapop(n).genes, total_settled, ID_colony_tracking(n,:), metapop(n).algal] = f_apply_recruitment(metapop(n).coral, metapop(n).algal,...
-                metapop(n).genes, META, REEF(n), max_density_settlers, CORAL.clade_prop, ID_colony_tracking(n,:), CORAL.MAX_HT);
+                metapop(n).genes, META, REEF(n), max_density_settlers, CORAL.clade_prop, ID_colony_tracking(n,:), CORAL.MIN_HT, CORAL.MAX_HT);
 
             RESULT.coral_settler_count(n,t+1,:) = total_settled ; % record the number of settlers before they are processed
 
@@ -937,7 +938,7 @@ t
             if RECORD.outplanted_reefs(n,t)==1
 
                 %Need to re-arrange coral matrix in case it wasn't previously done (depends on t)
-                [metapop(n).coral, metapop(n).genes] = f_struct_arrange(metapop(n).coral, metapop(n).genes, META);
+                % [metapop(n).coral, metapop(n).genes] = f_struct_arrange(metapop(n).coral, metapop(n).genes, META);
 
                 if META.outplant_density_variable==1
 
@@ -961,7 +962,7 @@ t
                     error('Option for outplanting with a fixed density but variable deployment area is not implemented yet. Make sure META.outplant_density_variable is set to "1" in settings_RESTORATION')
                 end
 
-                seed=rng;
+                % seed=rng;
 
                 % Determine the average mean HT of each group at the time coral was collected for breeding in captivity (nb years before current time step)
                 if t > META.outplant_breeding_time
@@ -976,9 +977,9 @@ t
                     f_coral_deployment(metapop(n).coral, metapop(n).algal, metapop(n).genes, REEF(n), ID_colony_tracking(n,:),...
                     META, Density_to_outplant, META.outplant_coral_diameter_mean, META.outplant_coral_diameter_sd, REEF(n).restored_cells,...
                     META.MEAN_HT_outplants + Baseline_coral_HT_mean',... % thermal enhancement of outplants relative to the regional HT at that time
-                    META.VAR_HT_outplants,META.MAX_HT_outplants) ;
+                    META.VAR_HT_outplants, META.MIN_HT_outplants, META.MAX_HT_outplants) ;
 
-                rng(seed);
+                % rng(seed);
             end
 
             %% LARVAL ENRICHMENT (March 2022)
@@ -986,14 +987,14 @@ t
 
                 Density_to_enrich = META.enriched_species_prop .* META.enriched_density;
 
-                seed=rng;
+                % seed=rng;
 
                 [metapop(n).coral, metapop(n).algal, metapop(n).genes, ID_colony_tracking(n,:), RECORD.total_enriched(n,t,:)] = ...
                     f_coral_deployment(metapop(n).coral, metapop(n).algal, metapop(n).genes, REEF(n), ID_colony_tracking(n,:),...
                     META, Density_to_enrich, META.enriched_coral_diameter_mean, META.enriched_coral_diameter_sd, REEF(n).restored_cells,...
-                    META.MEAN_HT_larvae,META.VAR_HT_larvae,META.MAX_HT_larvae) ;
+                    META.MEAN_HT_larvae, META.VAR_HT_larvae, META.MIN_HT_larvae, META.MAX_HT_larvae) ;
 
-                rng(seed);
+                % rng(seed);
             end
 
             %% RUBBLE STABILISATION
@@ -1210,7 +1211,7 @@ t
 
                         % Control and correct for HT value beyond the limits
                         HT_offspring(HT_offspring > CORAL.MAX_HT(s)) = CORAL.MAX_HT(s); % cap with maximum HT value
-                        HT_offspring(HT_offspring < -CORAL.MAX_HT(s)) = -CORAL.MAX_HT(s); % cap with maximum HT value
+                        HT_offspring(HT_offspring < CORAL.MIN_HT(s)) = CORAL.MIN_HT(s); % cap with minimum HT value
 
                         REEF(n).HT_pool_OUT_TMP(:,s) = HT_offspring; % store the checked HT in the pool of ougoing larvae
 

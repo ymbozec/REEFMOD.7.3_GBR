@@ -9,7 +9,7 @@
 % function [coral, genes, total_settled, ID_colony_tracking, algal] = ...
 %     f_apply_recruitment(coral, algal, genes, META, REEF, max_density_settlers, clade_prop, ID_colony_tracking, DeltaDHW, sensitivity_bleaching)
 function [coral, genes, total_settled, ID_colony_tracking, algal] = ...
-    f_apply_recruitment(coral, algal, genes, META, REEF, max_density_settlers, clade_prop, ID_colony_tracking, MAX_HT)
+    f_apply_recruitment(coral, algal, genes, META, REEF, max_density_settlers, clade_prop, ID_colony_tracking, MIN_HT, MAX_HT)
 
 total_settled = zeros(1,META.nb_coral_types) ;
 
@@ -86,7 +86,7 @@ for s = random_ct
         heat_tolerance_recruits(add_settler==1) = REEF.HT_pool_IN(idx_ht,s);
         
         heat_tolerance_recruits(heat_tolerance_recruits > MAX_HT(s)) = MAX_HT(s); % cap with maximum HT value
-        heat_tolerance_recruits(heat_tolerance_recruits < -MAX_HT(s)) = -MAX_HT(s); % cap with maximum HT value        
+        heat_tolerance_recruits(heat_tolerance_recruits < MIN_HT(s)) = MIN_HT(s); % cap with minimum HT value        
         
         coral(s).heat_tolerance = [coral(s).heat_tolerance heat_tolerance_recruits];
                 
