@@ -40,6 +40,7 @@ myGBR_REEFS = GBR_REEFS(META.reef_ID,[1 3:7 10:16]);
 coral_cover_per_taxa = zeros(NB_SIMULATIONS, META.nb_reefs, TIME+1, META.nb_coral_types,'single');
 coral_larval_supply = coral_cover_per_taxa;
 total_shelter_volume_per_taxa = coral_cover_per_taxa;
+
 coral_HT_mean = nan(NB_SIMULATIONS, META.nb_reefs, TIME+1,META.nb_coral_types,'single');
 coral_HT_var = coral_HT_mean;
 selection_diff = coral_HT_mean;
@@ -139,9 +140,11 @@ for simul = 1:NB_SIMULATIONS
     nb_coral_recruit(simul,:,:,:) = average_time_3D(tmp_nb_coral_recruit, scale, cols);
     nb_coral_offspring(simul,:,:,:) = average_time_3D(tmp_nb_coral_offspring, scale, cols);
     total_shelter_volume_per_taxa(simul,:,:,:) = average_time_3D(tmp_total_shelter_volume_per_taxa, scale, cols);
-    coral_HT_mean(simul,:,:,:) = average_time_3D(tmp_coral_HT_mean, scale, cols);
-    coral_HT_var(simul,:,:,:) = average_time_3D(tmp_coral_HT_var, scale, cols);
-    selection_diff(simul,:,:,:) = average_time_3D(tmp_selection_diff, scale, cols);
+
+    % Heat tolerance was recorded once a year only (reproduction)
+    coral_HT_mean(simul,:,:,:) = tmp_coral_HT_mean(:,1:2:end,:);
+    coral_HT_var(simul,:,:,:) = tmp_coral_HT_var(:,1:2:end,:);
+    selection_diff(simul,:,:,:) = tmp_selection_diff(:,1:2:end,:);
 
     if OPTIONS.doing_size_frequency == 1
         tmp_nb_coral_juv = squeeze(cat(4,OUTPUTS(simul).RESULT.coral_juv_count(:,:,:,:)));
@@ -268,9 +271,11 @@ if OPTIONS.doing_COTS == 1
 end
 
 % (11/2025): only record total nb of corals, not nb of corals persize class
-nb_coral_juv = uint16(sum(nb_coral_juv,5));
-nb_coral_adol = uint16(sum(nb_coral_adol,5));
-nb_coral_adult = uint16(sum(nb_coral_adult,5));
+if OPTIONS.doing_size_frequency == 1
+    nb_coral_juv = uint16(sum(nb_coral_juv,5));
+    nb_coral_adol = uint16(sum(nb_coral_adol,5));
+    nb_coral_adult = uint16(sum(nb_coral_adult,5));
+end
 
 % (11/2025): save coral cover lost as integrer values
 coral_cover_lost_bleaching = uint8(coral_cover_lost_bleaching);
