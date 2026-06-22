@@ -229,9 +229,10 @@ META.priority_option_Fogging.focal_reef = []; % 695-Moore; 697-Elford; 698-Brigg
 
 % Cooling (new implementation 06/2026)
 META.doing_cooling = RESTORATION.doing_cooling ; % timing of cooling (no cooling if sum(META.doing_cooling)=0)
-META.cooled_reef_ID = RESTORATION.cooled_reef_ID;
 
 if sum(META.doing_cooling) >0 % if doing MCB anywhere on the GBR
+
+    META.cooled_reef_ID = RESTORATION.cooled_reef_ID;
 
     K = ismember(META.reef_ID, META.cooled_reef_ID); % flag the reefs under MCB
 
@@ -240,7 +241,7 @@ if sum(META.doing_cooling) >0 % if doing MCB anywhere on the GBR
     HURDLE_MODEL_MCB(2).model = load(['params_hurdle_SHELF2_alb02_ssp' char(OPTIONS.SSP) '_DHW_MAX_100.mat']);
     HURDLE_MODEL_MCB(3).model = load(['params_hurdle_SHELF3_alb02_ssp' char(OPTIONS.SSP) '_DHW_MAX_100.mat']);
 
-    MCB_steps = find(META.doing_cooling==1)-1; % need to extract 1 to get into summer
+    MCB_steps = find(META.doing_cooling==1); % need to extract 1 to get into summer
     DHW_CF = DHW(:,MCB_steps); % extract yearly, making sure summer steps are taken
     DHW_MCB = zeros(size(DHW_CF)); % DHW under MCB to populate based on predictions from hurdle models
 
@@ -255,6 +256,7 @@ if sum(META.doing_cooling) >0 % if doing MCB anywhere on the GBR
     end
 
     DHW(K==1,MCB_steps) = DHW_MCB(K==1,:);% place the cooled DHW in the DHW matrix
+
 end
 
 % Old way of simulating cooling - just keep it null (otherwise will add extra cooling as DHW-META.cooling_factor*12
@@ -307,4 +309,3 @@ META.priority_option_LarvalEnrich = META.priority_option_Outplant;
 % META.priority_option_LarvalEnrich.link_strength = 0 ;
 % META.priority_option_LarvalEnrich.link_number = 0 ; 
 % META.priority_option_LarvalEnrich.reef_area = 0 ; 
-
