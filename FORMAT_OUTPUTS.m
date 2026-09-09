@@ -141,10 +141,12 @@ for simul = 1:NB_SIMULATIONS
     nb_coral_offspring(simul,:,:,:) = average_time_3D(tmp_nb_coral_offspring, scale, cols);
     total_shelter_volume_per_taxa(simul,:,:,:) = average_time_3D(tmp_total_shelter_volume_per_taxa, scale, cols);
 
-    % Heat tolerance was recorded once a year only (reproduction)
-    coral_HT_mean(simul,:,:,:) = tmp_coral_HT_mean(:,1:2:end,:);
-    coral_HT_var(simul,:,:,:) = tmp_coral_HT_var(:,1:2:end,:);
-    selection_diff(simul,:,:,:) = tmp_selection_diff(:,1:2:end,:);
+    % Sep 2026: note heat tolerance was recorded once a year only (reproduction) so better to extract without averaging
+    % -> gets columns of NaNs if long format extraction (every 6 months)
+    % Note it can also be NaN when no reproductive adults (nb_adol + nb_adult = 0)
+    coral_HT_mean(simul,:,:,:) = tmp_coral_HT_mean(:,1:(scale+1):end,:);
+    coral_HT_var(simul,:,:,:) = tmp_coral_HT_var(:,1:(scale+1):end,:);
+    selection_diff(simul,:,:,:) = tmp_selection_diff(:,1:(scale+1):end,:);
 
     if OPTIONS.doing_size_frequency == 1
         tmp_nb_coral_juv = squeeze(cat(4,OUTPUTS(simul).RESULT.coral_juv_count(:,:,:,:)));
